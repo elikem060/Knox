@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // User Profiles
+    match /user_profiles/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) 
+        && incoming().userId == userId
+        && incoming().name is string && incoming().name.size() < 100
+        && incoming().goal in ['lose_weight', 'build_muscle', 'maintain', 'increase_stamina'];
+      allow update: if isOwner(userId)
+        && incoming().userId == userId
+        && (incoming().diff(existing()).affectedKeys().hasOnly(['name', 'weight', 'height', 'goal']));
+    }
+
+    // Workouts
+    match /workouts/{workoutId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() 
+        && incoming().userId == request.auth.uid
+        && incoming().type is string && incoming().type.size() < 50
+        && incoming().date is timestamp;
+      allow update: if isSignedIn() && existing().userId == request.auth.uid
+        && incoming().userId == request.auth.uid
+        && (incoming().diff(existing()).affectedKeys().hasOnly(['exercises', 'duration', 'notes', 'type', 'date']));
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // Daily Metrics
+    match /daily_metrics/{metricId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() 
+        && incoming().userId == request.auth.uid
+        && incoming().date is string;
+      allow update: if isSignedIn() && existing().userId == request.auth.uid
+        && (incoming().diff(existing()).affectedKeys().hasOnly(['weight', 'waterIntake', 'calories']));
+    }
+  }
+}

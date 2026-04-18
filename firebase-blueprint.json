@@ -1,0 +1,77 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Basic user information and fitness goals",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "weight": { "type": "number", "description": "Weight in kg" },
+        "height": { "type": "number", "description": "Height in cm" },
+        "goal": { "type": "string", "enum": ["lose_weight", "build_muscle", "maintain", "increase_stamina"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "goal"]
+    },
+    "Workout": {
+      "title": "Workout Session",
+      "description": "A logged exercise session",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "description": "e.g., Strength, Cardio, Yoga" },
+        "duration": { "type": "number", "description": "Duration in minutes" },
+        "notes": { "type": "string" },
+        "exercises": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "sets": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "reps": { "type": "number" },
+                    "weight": { "type": "number" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "required": ["userId", "date", "type"]
+    },
+    "DailyMetric": {
+      "title": "Daily Metric",
+      "description": "Daily tracking of weight, water, etc.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "weight": { "type": "number" },
+        "waterIntake": { "type": "number", "description": "liters" },
+        "calories": { "type": "number" }
+      },
+      "required": ["userId", "date"]
+    }
+  },
+  "firestore": {
+    "/user_profiles/{userId}": {
+      "schema": "UserProfile",
+      "description": "Private profile for each user"
+    },
+    "/workouts/{workoutId}": {
+      "schema": "Workout",
+      "description": "Workout sessions logged by users"
+    },
+    "/daily_metrics/{metricId}": {
+      "schema": "DailyMetric",
+      "description": "Daily metrics for weight and habit tracking"
+    }
+  }
+}
